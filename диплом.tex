@@ -1,0 +1,134 @@
+% !TEX TS-program = pdflatexmk
+\documentclass[12pt,fleqn]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T2A]{fontenc}
+\usepackage{amssymb,amsmath,mathrsfs,amsthm}
+\usepackage[russian]{babel}
+\usepackage{graphicx}
+\usepackage[footnotesize]{caption2}
+\usepackage{indentfirst}
+%\usepackage[ruled,section]{algorithm}
+%\usepackage[noend]{algorithmic}
+%\usepackage[all]{xy}
+
+% Ïàðàìåòðû ñòðàíèöû
+\textheight=24cm
+\textwidth=16cm
+\oddsidemargin=5mm
+\evensidemargin=-5mm
+\marginparwidth=36pt
+\topmargin=-2cm
+\footnotesep=3ex
+\setlength{\parskip}{6pt}
+%\flushbottom
+\raggedbottom
+\tolerance 3000
+% ïîäàâèòü ýôôåêò "âèñÿ÷èõ ñòpîê"
+\clubpenalty=10000
+\widowpenalty=10000
+\renewcommand{\baselinestretch}{1.1}
+\renewcommand{\baselinestretch}{1.5}
+\linespread{1.5}
+%äëÿ ïå÷àòè ñ áîëüøèì èíòåðâàëîì
+\newcommand{\anonsection}[1]{\section*{#1}\addcontentsline{toc}{section}{#1}}
+
+\begin{document}
+	
+	\begin{titlepage}
+		\begin{center}
+			Московский государственный университет имени М.В. Ломоносова\\
+			факультет вычислительной математики и кибернетики
+			
+			\bigskip
+			{\includegraphics[scale=0.8]{/Users/homidov/Desktop/dip/msu.png}}
+			\bigskip
+			
+			
+			\textsf{\large\bfseries
+				\\[10mm]
+				ВЫПУСКНАЯ КВАЛИФИКАЦИОННАЯ РАБОТА
+			}\\[10mm]
+			
+			\textsf{\large\bfseries
+				\\[20mm]
+				Реализация программного модуля суммирования сейсмической миграции с использованием графических ускорителей
+			}\\[10mm]
+			
+			
+			
+			\begin{flushright}
+				\parbox{0.5\textwidth}{
+					
+					
+					
+					Выполнил:\\
+					\\
+					\emph{Хомидов Носирхуджа}\\[10mm]
+					Научный руководитель:\\
+					\\
+					\emph{к.ф.-м.н. Левченко Вадим Дмитриевич}
+				}
+			\end{flushright}
+			
+			\vspace{\fill}
+			\end{center}
+	\end{titlepage}
+	
+	\newpage
+	\renewcommand{\contentsname}{Содержание}
+	\tableofcontents
+	\newpage
+	\begin{abstract}
+	\end{abstract}
+	\section{Введение (неполное)}
+	Уравнение Гельмгольца:
+	\begin{center}
+		div($k$ grad $u$) $+ \omega^2\rho u=0$ \qquad  \qquad \qquad  \qquad  \qquad  \qquad (1)
+	\end{center} 
+	Решение задачи волнового продолжения в неоднородное полупространство:\
+	\begin{center}
+	$u(r,\omega)=-\frac{1}{4\pi} \iint \limits_{S} u_0(r_0, \omega) k(r_0) \frac{\partial G(r_0 | r; \omega)}{\partial \textbf{n}} dr_0$ \qquad  \qquad  \quad(2)
+	\end{center} 
+	где $u|_s=u_0$ - функция, задающая граничное условие Дирихле,  S - граница неоднородного полупространства $z>0$, $\omega$ – циклическая временная частота; $G(r_0 | r; \omega)$ - функция Грина;  $\frac{\partial}{\partial n}$ - производная по направлению внешней нормали к S; $k=k(r)$ и $\rho = \rho(r)$ заданные параметры неоднородной среды, определяющие локальную скорость распространения колебаний $\nu(r)= \sqrt{k(r)/\rho(r)}$; $dr_0$  – элемент поверхности интегрирования S. \\
+	Введем обращенное время  $\tilde t=T-t$ запишем в системе координат обращенного времени функцию $\tilde u= \tilde u (r_s, r_g, \tilde t)$. Где $u(r_s, r_g, t) $ описывает результаты регистрации волн произвольно расположенными в полупространстве z > 0 приемниками в точках $r_g=(x_g, y_g,z_g)$ от источника в произвольных точках $r_s=(x_s, y_s,z_s)$. Зафиксируем некоторый произвольный источник s. Используя граничное условие $u_0=u_0(s,g, \omega) = u(r_s, r_g, t)|_{z_s=z_g=0}$ можно применить интегральную формулу волнового продолжения (2) и получить результат обращенного волнового продолжения в нижнее полупространство $z_g > 0$: 
+	\begin{center}
+	$u(s,r_g;\omega)=-\frac{1}{4\pi} \iint \limits_{S_g} u_0(s, g; \omega) k(g) \frac{\partial G(g| r_g ; \omega)}{\partial \textbf{n}_s} dg$, \qquad  \qquad  \quad(3)
+	\end{center}
+	 где $dg$ - элемент площади интегрирования, $n_g$ - внешняя нормаль к поверхности $S_g$. Полученное интегральное выражение представляет собой результат восстановления в произвольной точке $r_g$ полупространства $z_g > 0$ волнового поля по его измеренным значениям на поверхности наблюдений $S_g$ для произвольного фиксированного источника s. Зафиксируем точку $r_g$ и рассмотрим продолженное волновое поле  $ \tilde u (r_s, r_g, \tilde t)$ как функцию координат произвольного источника s.
+	 
+	 
+	 \section{Постановка задачи}
+	 Напишем  формальное асимптотическое приближение функции Грина из (2) в виде:
+	 \begin{center}
+	 $G(r_0 | r_*; \omega) \approx \sum \limits_{m}|A_m(r_0 | r_*)|e^{i\omega\tau_m(r_0|r_*)} e^{i Ind_m \text{sgn} \omega\pi/2}$, 
+	 \end{center}
+	  где $|A_m(r_0 | r_*)|e^{i\omega\tau_m(r_0|r_*)} e^{i Ind_m \text{sgn} \omega\pi/2}$ - одно из одно из слагаемых лучевой функции Грина, отвечающих непрерывному участку фронта волны – «лепестку» с номером m, связанному с пучком лучей, исходящих из глубинной точки $r_*$, с фиксированной величиной накопленного индекса $Ind_m(r_0|r_*)$. $Ind_m(r_0|r_*)$ отвечает полному числу обращений в ноль якобиана $J\left(\mathbf{r}(\tau, \varphi, \theta) \mid \mathbf{r}_{*}\right)=\left(\frac{\partial \mathbf{r}}{\partial \tau}, \frac{\partial \mathbf{r}}{\partial \varphi}, \frac{\partial \mathbf{r}}{\partial \theta}\right)$ вдоль соответствующей лучевой трубки. 	$A_m(r_0| r_*)$ представляет собой лучевую амплитуду m-лепестка в точке $r_0$ выхода соответствующей лучевой трубки на поверхность наблюдений, имеющую вид: 
+	  \begin{center}
+	  $A\left(\mathbf{r} \mid \mathbf{r}_{*}\right)=\frac{1}{k_{*}}\left(\frac{\nu_{*} \rho_{*}|\sin \theta|}{\nu \rho\left[\frac{J\left(\mathbf{r} \mid \mathbf{r}_{*}\right)}{\nu}\right]}\right)^{1 / 2} .$ \qquad \qquad \qquad \qquad (4)
+	\end{center}
+	Отсюда получим:\\
+	$\begin{gathered}
+\frac{\partial G\left(\mathbf{r}_{0} \mid \mathbf{r}_{*} ; \omega\right)}{\partial \mathbf{n}} \approx\left(\sum_{m} i \omega\left|A_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right| e^{i \omega \tau\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)} e^{i     \operatorname{lnd}_{m} \operatorname{sgn} \omega \pi / 2} \nabla_{\mathbf{r}_{0}} \tau_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right), \mathbf{n}\right)= \\
+=i \omega \sum_{m}\left|A_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right| \frac{\cos \alpha_{m}}{v\left(\mathbf{r}_{0}\right)} e^{i \omega \tau_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)} e^{i \operatorname{Ind} \operatorname{sgn} \omega \pi / 2}
+\end{gathered},\qquad (5)$\\
+ $\alpha_m$ - угол между направлением выхода луча, принадлежащего m-лепестку, в точке $r_0$ поверхности S и нормалью n. Выполнив подстановку (5) в (2), получим:\\
+$\begin{gathered}
+u\left(\mathbf{r}_{*} ; \omega\right) \approx-\frac{1}{4 \pi} \iint \limits_{S} u_{0} k_{0} \sum_{m} i \omega\left|A_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right| \frac{\cos \alpha_{m}}{\nu\left(\mathbf{r}_{0}\right)} e^{i \omega \tau_{m}\left(\mathbf{r}_{0} / \mathbf{r}_{\mathbf{r}}\right)} e^{i \operatorname{lnd}_{m} \operatorname{sgn} \omega \pi / 2} d \mathbf{r}_{0} \approx \\
+\approx-\frac{1}{4 \pi} \sum_{m} \iint \limits_{S_{m}} u_{0} k_{0} i \omega\left|A_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right| \frac{\cos \alpha_{m}}{\nu\left(\mathbf{r}_{0}\right)} e^{i \omega \tau_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{\mathbf{r}}\right)} e^{i \operatorname{lnd}_{m} \operatorname{sgn} \omega \pi / 2} d \mathbf{r}_{0} \qquad \qquad \qquad \qquad(6)
+\end{gathered}$
+где $d \mathbf{r}_{0}$ - элемент площади поверхности $S ; S_{m}$ - участок поверхности, связанный с $m$-лепестком многозначного эйконала $\tau_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)$. Заметим, что входящая в (6) амплитуда $\left|A_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right|$ в соответствии с (4) является неограниченной функцией в окрестности каустик.\\
+Выполнив обратное преобразование Фурье по времени (6), получим решение задачи волнового продолжения во временной области:
+\begin{center}
+	$u\left(\mathbf{r}_{*}, t\right) \approx-\frac{1}{4 \pi} \sum \limits_{m} \iint \limits_{S_m} k_{0}\left|\tilde{A}_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right| \frac{\cos \alpha_{m}}{\nu\left(\mathbf{r}_{0}\right)} H^{\text {Ind}_m}\left(u_{0}\right)_{t}^{\prime}\left(x_{0}, y_{0} ; t+\tau_{m}\left(\mathbf{r}_{0} \mid \mathbf{r}_{*}\right)\right) d x_{0} d y_{0}   \qquad (7)$
+	\end{center} 
+Выпишем выражение асимптотического решения задачи 3D-миграции до суммирования данных многократных перекрытий: 
+{\footnotesize 
+$$f\left(\mathbf{r}_{*}\right) \approx\left(\frac{1}{4 \pi}\right)^{2} \sum_{m, n} \int \limits_{S_{m}} \int \limits_{S_n} k_{\mathrm{s}}k_{\mathrm{g}} \frac{\cos \left(\alpha_{s}\right)_{m} \cos \left(\alpha_{g}\right)_{n}}{\nu_{s} \nu_{g}}\left[A_{s}\right]_{m}\left[A_{g}\right]_{n} H^{\operatorname{Ind}_m+\operatorname{Ind}_n}\left(u_{0}\right)_{t}^{\prime}\left(\mathbf{s}, \mathbf{g} ;\left(\tau_{s}\right)_{m}+\left(\tau_{g}\right)_{n}\right) d \mathbf{s} d \mathbf{g} $$ (8)} \\
+где $S_{m}$ и $S_{n}-$ участки площади поверхности, связанные с лепестками $m, n$ и отвечающими им участками фронта волны с постоянным индексом для точечного источника, расположенного в $\mathbf{r}_{*}$. Суммирование выполняется по всем возможным сочетаниям лепестков для источников и приемников.  $f\left(\mathbf{r}_{*}\right)-$ искомое сейсмическое изображение в глубинной точке $\mathbf{r}_{*} ; u_{0}(\mathbf{s}, \mathbf{g}, t)-$ исходные данные многократных перекрытий для источников и приемников с координатами $(\mathbf{s}, \mathbf{g}) ; \tau_{s}+\tau_{g}-$ сумма времен пробега из $\mathbf{r}_{*}$ до источников и приемников;  $\nu$ и $k-$ заданные параметры среды, входящие в волновое уравнение (1) ; $H-$ преобразование Гильберта;  $\left[A_{s}\right]^{-1}$ и $\left[A_{g}\right]^{-1}-$ обратные величины лучевых амплитуд для источников и приемников. \\ 
+Во внутреннем 4-кратном интеграле (8) по координатам источников и приемников можно так структурировать исходные данные, чтобы обеспечить миграционное преобразование в сейсмическое изображение однократных сейсмических кубов квазиравных удалений/азимутов направлений источники - приемники. С этой целью введем «биновые» координаты средних точек и половинных удалений: m $=(\mathbf{s}+\mathbf{g}) / 2$, $\mathbf{h}=(\mathbf{s}-\mathbf{g}) / 2 .$ Средние точки $\mathbf{m}=\mathbf{m}\left(m_{x}, m_{y}\right)$ образуют плотную и регулярную биновую сетку. Назовем «покрытием» совокупность исходных сейсмических трасс, однократно заполняющих узлы этой биновой сетки для некоторого фиксированного вектора $\mathbf{h}\left(h_{x}, h_{y}\right)$. С учетом сказанного перепишем аппроксимацию (8):\\
+{\small 
+$$f\left(\mathbf{r}_{*}\right) \approx\left(\frac{1}{4 \pi}\right)^{2} \sum_{m, n} \int \limits_{S_{m}} \int \limits_{S_n} k_{\mathrm{s}}k_{\mathrm{g}} \frac{\cos \left(\alpha_{s}\right)_{m} \cos \left(\alpha_{g}\right)_{n}}{\nu_{s} \nu_{g}}\left[A_{s}\right]_{m}\left[A_{g}\right]_{n} H^{\operatorname{Ind}_m+\operatorname{Ind}_n}\left(u_{0}\right)_{t}^{\prime}\left(\mathbf{s}, \mathbf{g} ;\left(\tau_{s}\right)_{m}+\left(\tau_{g}\right)_{n}\right) d \mathbf{s} d \mathbf{g} =$$ $$= \left(\frac{1}{2 \pi}\right)^{2} \sum \limits_{m, n} \int\limits_{S_{m}} \int\limits_{S_n} k_{s}k_g \frac{\cos \left(\alpha_{s}\right)_{m} \cos \left(\alpha_{g}\right)_{n}}{\nu_{s} \nu_{g}}\left[A_{s}\right]_{m}\left[A_{g}\right]_{n} H^{\operatorname{Ind}_{m}+\operatorname{Ind}_{n}}\left(u_{0}\right)_{t}^{\prime}\left(\mathbf{m}+\mathbf{h}, \mathbf{m}-\mathbf{h} ;\left(\tau_{s}\right)_{m}+\left(\tau_{g}\right)_{n}\right) d \mathbf{m} d \mathbf{h}=$$  \\ $=\left(\frac{1}{2 \pi}\right)^{2} \int d \mathbf{h}\left(\sum_{m, n} \int\limits_{S_{m}} k_{\mathrm{s}} k_{\mathrm{g}} \frac{\cos \left(\alpha_{s}\right)_{m} \cos \left(\alpha_{g}\right)_{n}}{\nu_{s} \nu_{g}}\left[A_{s}\right]_{m}\left[A_{g}\right]_{n} H^{\operatorname{Ind}_{m}+\operatorname{Ind}_{n}}\left(u_{0}\right)_{t}^{\prime}\left(\mathbf{m}+\mathbf{h}, \mathbf{m}-\mathbf{h} ;\left(\tau_{s}\right)_{m}+\left(\tau_{g}\right)_{n}\right) d \mathbf{m}\right)$}\\
+Выражение, стоящее в круглых скобках, представляет собой результат миграции фиксированного покрытия $\mathbf{h}=$ const, a внешний интеграл по h превращается в обычную сумму по покрытиям.
+
+\end{document}
