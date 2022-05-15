@@ -1,0 +1,7 @@
+\babel@toc {russian}{}
+\contentsline {section}{\numberline {1}Введение}{2}{}%
+\contentsline {section}{\numberline {2}Общий вид решения задачи сейсмической миграции до суммирования}{4}{}%
+\contentsline {section}{\numberline {3}Суммирование}{7}{}%
+\contentsline {section}{\numberline {4}Постановка задачи}{9}{}%
+\contentsline {section}{\numberline {5}Программная реализация на Cuda}{10}{}%
+\contentsline {section}{\numberline {6}Результаты вычислительных экспериментов и их анализ}{10}{}%
