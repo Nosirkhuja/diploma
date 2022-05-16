@@ -183,7 +183,7 @@ $$+\mathbf{h}, \mathbf{m}-\mathbf{h} ;\left(\tau_{s}\right)_{l}+\left(\tau_{g})_
  \section{Суммирование}
 
 Функция Грина от приемника $g$ или источника $s$  задана в узлах равномерной прямоугольной сетки $\{r^G_i\}$,
-с шагами $\Delta_x^G, \Delta_y^G, \Delta_z^G$, ось $Z$ направлена {\bf вниз}.
+с шагами $\Delta_x^G, \Delta_y^G, \Delta_z^G$.
 Изображение вычисляется в узлах равномерной прямоугольной сетки $\{r^I_i\}$ с шагами $\Delta_x^I, \Delta_y^I, \Delta_z^I$,
 совпадающей с сеткой задания фунцкции Грина по латерали,
 и измельченной (по сравнению с сеткой задания фунцкции Грина) по вертикали в $n_Z$ раз, $n_Z\geq 1$,
@@ -203,9 +203,7 @@ $$
 \left(\frac{\Delta_{{\rm bin}x} n_{0x}}{v_0}, \frac{\Delta_{{\rm bin}y} n_{0y}}{v_0} \right),
 $$
 где $\Delta_{{\rm bin}x,y}$ --- размеры площадки источника, $n_{0x,y}$ --- компоненты направления выхода луча из источника,
-$v_0$ --- скорость в источнике в направлении луча, таким образом компоненты вектора~${\mathbf\Delta}^{\tau}$
-  являются {\bf знакопеременными}.
-  
+$v_0$ --- скорость в источнике в направлении луча. \\  
 Восстановление функции Грина на сетке изображения производится по формуле\\
 \[
 G =w_u \sum_i^{N_u} A_{u,i}\, {\widehat T}(|{\mathbf\Delta}^\tau_{u,i}|)\, {\widehat H}(I_{u,i})\, u_0\left(\tau_{u,i} +  \Delta_u {n_{zu}} \right) +\] \[  \qquad +
@@ -279,8 +277,93 @@ $$
 \section{Постановка задачи}
 Основной идеей миграции до суммирования на основе обращённого волнового продолжения является восстановление поля отражённых волн во всей среде $(z>0)$ по его граничным значениям при $z=0$.  Данный принцип состоит в том, что в качестве изображения среды в каждой точке r берётся значения продолженного поля отраженных волн на том времени, которое соответствует времени прихода в эту точку прямой волны от источника. Основной идеей обращённого волнового продолжения является переход от прямого времени к обращённому: $\tau = T-t$, где T определяет момент окончания регистрации. Записанные на поверхности данные рассматриваются как граничные условия. Также для решения уравнения необходимо задать начальные условия (в обращённом времени) ,описывающие все упругие волны в среде на момент окончания регистрации сейсмических колебаний. Поскольку такая информация недоступна, приходится пренебрегать их влиянием и полагать начальные условия равными нулю.  
 \section{Программная реализация на Cuda}
+Программа была реализована на языке Cuda версии 11.2.152. Для сохранения, загрузки и дальнейшей работы с данными была написана структура aiv\_arr в которой данные хранятся в массиве: \begin{verbatim}
+template<class Tfloat, int dim>
+struct aiv_arr {
+  array<int, dim> size;
+  Tfloat *data;
+ public:
+  aiv_arr() {}
+  aiv_arr(array<int, dim> N): size(N) {
+    reset();
+  }
+  long int size_arr;
+  void reset() {
+    long int sz=size[0];
+    for(int d=1; d<dim; d++) sz *= size[d];
+    cudaMallocManaged(&data, sz*sizeof(Tfloat));
+    size_arr = sz;
+ }
+  ~aiv_arr(){
+    cudaFree(data);
+  }
+  __device__ __host__ Tfloat& operator[](array<int, dim> I) {
+    long int sh=I[dim-1];
+    for(int d=dim-2; d>=0; d--) sh = I[d]+size[d]*sh;
+    return data[sh];
+  }
+\end{verbatim}
+Для выделения памяти используется функция {\bf cudaMallocManaged},  для освобождения - {\bf cudaFree}. Так как данные мы получаем в виде файлов, необходимо написать функцию, которая читает эти файлы и корректно их сохраняется в программе: 
+\begin{verbatim}
+void load(const char* fn) {
+    int rs=0;
+    try {
+      FILE* pFile=fopen(fn, "r"); 
+      if(pFile == NULL) throw("При открытии файла возникли проблемы. 
+      Возможно, его нет или он закрыт на чтение.");
+      int head_len, D, szT, N[dim];
+      rs=fread(&head_len, 4, 1, pFile); if(rs != 1) throw "head_len";
+      if(head_len<0 || head_len>4096) throw "head_len too small or big";
+      if(head_len>0) {
+        char head[head_len];
+        rs=fread(head, 1, head_len, pFile); if(rs != head_len) throw "head";
+      }
+      rs=fread(&D, 4, 1, pFile); if(rs != 1 || D!=dim) throw "D";
+      rs=fread(&szT, 4, 1, pFile); if(rs != 1 || szT!=sizeof(Tfloat)) throw "szT";
+      rs=fread(N, 4, D, pFile); if(rs != D) throw "N";
+      for(int d=0; d<dim; d++) size[d] = N[d];
+      reset();
+      rs=fread(&data[0], szT, size_arr, pFile);
+      if(rs != size_arr) throw "data";
+      fclose(pFile);
+    } catch(const char* err) {
+      printf("Error on load <%s>: %s, rs=%d\n", fn, err, rs);
+      throw(-1);
+    } catch(...) {
+      printf("Some error on drop <%s>, rs=%d\n", fn, rs);
+      throw(-1);
+    }
+  }
+\end{verbatim}
+Итоговое изображение вычисляется на ядре Cuda и представляется  в виде структуры aiv\_arr. Для отрисовки изображения была выбрана программа VirtualGL 3.0. Для сохранения изображения и  дальнейшей отрисовки была написана функция, которая сохраняет данные из структуры aiv\_arr в файл:
+\begin{verbatim}
+void drop(const char* fn) {
+    int rs=0;
+    try {
+      FILE* pFile=fopen(fn, "w"); 
+      if(pFile == NULL)
+      throw("При открытии файла возникли проблемы");
+      int head_len=0, D=dim, szT=sizeof(Tfloat), N[dim];
+      for(int d=0; d<dim; d++) N[d] = size[d];
+
+      int rs=fwrite(&head_len, 4, 1, pFile); if(rs != 1) throw "head_len";
+      rs=fwrite(&D, 4, 1, pFile); if(rs != 1) throw "dim";
+      rs=fwrite(&szT, 4, 1, pFile); if(rs != 1) throw "szT";
+      rs=fwrite(N, 4, D, pFile); if(rs != D) throw "N";
+      rs=fwrite(&data[0], szT, size_arr, pFile); if(rs != size_arr) throw "data";
+      fclose(pFile);
+    } catch(const char* err) {
+      printf("Error on drop <%s>: %s, rs=%d\n", fn, err, rs);
+      throw(-1);
+    } catch(...) {
+      printf("Some error on drop <%s>, rs=%d\n", fn, rs);
+      throw(-1);
+    }
+  }
+
+\end{verbatim}
 \section{Результаты вычислительных экспериментов и их анализ}
-\section{}
+\section{Выводы}
 \newpage 
 \begin{thebibliography}{3}
 \bibitem{}
